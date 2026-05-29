@@ -20,6 +20,7 @@ function todayInMonth(month: string): string {
 export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
+  const [targetMonth, setTargetMonth] = useState(defaultMonth);
   const [date, setDate] = useState(() => todayInMonth(defaultMonth));
   const [note, setNote] = useState("");
 
@@ -34,6 +35,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
           : String(Date.now()) + Math.random().toString(16).slice(2),
       amount: value,
       category,
+      targetMonth,
       date,
       note: note.trim() || undefined,
     });
@@ -44,7 +46,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:items-end"
     >
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-slate-600">Amount</span>
@@ -74,6 +76,17 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-slate-600">Target month</span>
+        <input
+          type="month"
+          required
+          value={targetMonth}
+          onChange={(e) => setTargetMonth(e.target.value)}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
       </label>
 
       <label className="flex flex-col gap-1 text-sm">

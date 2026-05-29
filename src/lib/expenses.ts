@@ -2,7 +2,8 @@ export type Expense = {
   id: string;
   amount: number;
   category: string;
-  date: string; // ISO yyyy-mm-dd
+  date: string; // ISO yyyy-mm-dd — when the expense was logged/paid
+  targetMonth: string; // yyyy-mm — which month this bill is for
   note?: string;
 };
 
@@ -31,7 +32,6 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const STORAGE_KEY = "expense-tracker:expenses";
-const CURRENCY_KEY = "expense-tracker:currency";
 
 export function loadExpenses(): Expense[] {
   if (typeof window === "undefined") return [];
@@ -40,9 +40,18 @@ export function loadExpenses(): Expense[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (e) => e && typeof e.amount === "number" && typeof e.date === "string",
-    );
+    return parsed
+      .filter(
+        (e) => e && typeof e.amount === "number" && typeof e.date === "string",
+      )
+      .map((e) => ({
+        ...e,
+        // Back-fill targetMonth for data saved before the field existed.
+        targetMonth:
+          typeof e.targetMonth === "string" && e.targetMonth
+            ? e.targetMonth
+            : monthKey(e.date),
+      }));
   } catch {
     return [];
   }
@@ -51,16 +60,6 @@ export function loadExpenses(): Expense[] {
 export function saveExpenses(expenses: Expense[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-}
-
-export function loadCurrency(): string {
-  if (typeof window === "undefined") return "$";
-  return window.localStorage.getItem(CURRENCY_KEY) || "$";
-}
-
-export function saveCurrency(currency: string): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CURRENCY_KEY, currency);
 }
 
 export function monthKey(isoDate: string): string {
@@ -73,9 +72,9 @@ export function formatMonthLabel(key: string): string {
   return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
-export function formatMoney(amount: number, currency: string): string {
-  return `${currency}${amount.toLocaleString(undefined, {
+export function formatMoney(amount: number): string {
+  return amount.toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  })}`;
+  });
 }
