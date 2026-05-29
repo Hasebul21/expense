@@ -16,6 +16,7 @@ export const CATEGORIES = [
   "Health",
   "Shopping",
   "Education",
+  "Pocket Money",
   "Investment",
   "Stock Market",
   "Credit Card Bill",
@@ -32,6 +33,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Health: "#ef4444",
   Shopping: "#8b5cf6",
   Education: "#14b8a6",
+  "Pocket Money": "#eab308",
   Investment: "#0ea5e9",
   "Stock Market": "#a855f7",
   "Credit Card Bill": "#f43f5e",
@@ -68,6 +70,31 @@ export function loadExpenses(): Expense[] {
 export function saveExpenses(expenses: Expense[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+}
+
+const BUDGET_KEY = "expense-tracker:budgets";
+
+// Budgets are stored per target month: { "2026-05": 1500, ... }
+export function loadBudgets(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(BUDGET_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const result: Record<string, number> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === "number" && isFinite(v)) result[k] = v;
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+export function saveBudgets(budgets: Record<string, number>): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(BUDGET_KEY, JSON.stringify(budgets));
 }
 
 export function monthKey(isoDate: string): string {

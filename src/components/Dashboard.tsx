@@ -5,7 +5,9 @@ import {
   CATEGORY_COLORS,
   formatMonthLabel,
   formatMoney,
+  loadBudgets,
   loadExpenses,
+  saveBudgets,
   saveExpenses,
   type Expense,
 } from "../lib/expenses";
@@ -19,12 +21,14 @@ function currentMonthKey(): string {
 
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [hydrated, setHydrated] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
     setExpenses(loadExpenses());
+    setBudgets(loadBudgets());
     setHydrated(true);
   }, []);
 
@@ -33,6 +37,23 @@ export default function Dashboard() {
     if (hydrated) saveExpenses(expenses);
   }, [expenses, hydrated]);
 
+  useEffect(() => {
+    if (hydrated) saveBudgets(budgets);
+  }, [budgets, hydrated]);
+
+  function setMonthBudget(month: string, raw: string) {
+    const value = parseFloat(raw);
+    setBudgets((prev) => {
+      const next = { ...prev };
+      if (raw === "" || !isFinite(value) || value < 0) {
+        delete next[month];
+      } else {
+        next[month] = value;
+      }
+      return next;
+    });
+  }
+
   function addExpense(expense: Expense) {
     setExpenses((prev) => [expense, ...prev]);
     setSelectedMonth(expense.targetMonth);
@@ -40,6 +61,23 @@ export default function Dashboard() {
 
   function deleteExpense(id: string) {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+  }
+
+  function deleteMonth(month: string) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Delete all expenses and the budget for ${formatMonthLabel(month)}?`,
+      )
+    ) {
+      return;
+    }
+    setExpenses((prev) => prev.filter((e) => e.targetMonth !== month));
+    setBudgets((prev) => {
+      const next = { ...prev };
+      delete next[month];
+      return next;
+    });
   }
 
   // All target months that have data, plus the current and selected month, desc
@@ -93,6 +131,15 @@ export default function Dashboard() {
       }));
   }, [expenses]);
 
+  const monthBudget = budgets[selectedMonth];
+  const hasBudget = monthBudget !== undefined;
+  const remaining = hasBudget ? monthBudget - monthTotal : null;
+  const spentPct =
+    hasBudget && monthBudget > 0
+      ? Math.min(100, (monthTotal / monthBudget) * 100)
+      : 0;
+  const overBudget = remaining !== null && remaining < 0;
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* Header */}
@@ -101,9 +148,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">
             💰 Expense Tracker
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Track your monthly spending and visualize where your money goes.
-          </p>
         </div>
         <label className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto">
           <span className="font-medium">Month</span>
@@ -121,19 +165,71 @@ export default function Dashboard() {
         </label>
       </header>
 
-      {/* Summary cards */}
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Budget summary cards */}
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+          <label className="block">
+            <span className="text-sm text-slate-500">
+              {formatMonthLabel(selectedMonth)} budget
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="Set budget"
+              value={monthBudget ?? ""}
+              onChange={(e) => setMonthBudget(selectedMonth, e.target.value)}
+              className="mt-1 w-full border-0 border-b border-transparent bg-transparent p-0 text-2xl font-bold text-slate-800 outline-none focus:border-indigo-400"
+            />
+          </label>
+        </div>
+
         <SummaryCard
-          label={`${formatMonthLabel(selectedMonth)} total`}
+          label="Spent this month"
           value={formatMoney(monthTotal)}
           accent="text-indigo-600"
         />
+
+        <SummaryCard
+          label="Remaining"
+          value={hasBudget ? formatMoney(remaining as number) : "—"}
+          accent={overBudget ? "text-red-600" : "text-emerald-600"}
+        />
+
         <SummaryCard
           label="All-time total"
           value={formatMoney(allTimeTotal)}
-          accent="text-emerald-600"
+          accent="text-slate-700"
         />
       </section>
+
+      {/* Budget progress bar */}
+      {hasBudget && (
+        <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-600">
+              {formatMonthLabel(selectedMonth)} budget usage
+            </span>
+            <span
+              className={overBudget ? "font-semibold text-red-600" : "text-slate-500"}
+            >
+              {formatMoney(monthTotal)} / {formatMoney(monthBudget)}
+              {overBudget
+                ? ` · over by ${formatMoney(Math.abs(remaining as number))}`
+                : ""}
+            </span>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className={`h-full rounded-full transition-all ${
+                overBudget ? "bg-red-500" : "bg-indigo-500"
+              }`}
+              style={{ width: `${overBudget ? 100 : spentPct}%` }}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Add form */}
       <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
@@ -168,18 +264,46 @@ export default function Dashboard() {
                 key={group.month}
                 className="flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5"
               >
-                <div className="mb-3 flex items-baseline justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    {formatMonthLabel(group.month)}
-                  </h3>
+                <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-800">
+                      {formatMonthLabel(group.month)}
+                    </h3>
+                    <button
+                      onClick={() => deleteMonth(group.month)}
+                      aria-label={`Delete ${formatMonthLabel(group.month)}`}
+                      title="Delete this month"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
+                    >
+                      🗑
+                    </button>
+                  </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-indigo-600">
                       {formatMoney(group.total)}
                     </p>
-                    <p className="text-xs text-slate-400">
-                      {group.items.length}{" "}
-                      {group.items.length === 1 ? "item" : "items"}
-                    </p>
+                    {budgets[group.month] !== undefined ? (
+                      <p
+                        className={`text-xs font-medium ${
+                          budgets[group.month] - group.total < 0
+                            ? "text-red-600"
+                            : "text-emerald-600"
+                        }`}
+                      >
+                        {budgets[group.month] - group.total < 0
+                          ? `Over by ${formatMoney(group.total - budgets[group.month])}`
+                          : `${formatMoney(budgets[group.month] - group.total)} left`}
+                        <span className="text-slate-400">
+                          {" "}
+                          of {formatMoney(budgets[group.month])}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400">
+                        {group.items.length}{" "}
+                        {group.items.length === 1 ? "item" : "items"}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <ul className="divide-y divide-slate-100">
