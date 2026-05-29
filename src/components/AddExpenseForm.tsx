@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, type Expense } from "../lib/expenses";
+import { CATEGORIES, CATEGORY_ICONS, type Expense } from "../lib/expenses";
 
 type Props = {
   defaultMonth: string; // yyyy-mm
   onAdd: (expense: Expense) => void;
 };
+
+const FIELD =
+  "w-full rounded-xl border border-transparent bg-slate-100 px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 sm:text-sm";
 
 export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
   const [amount, setAmount] = useState("");
@@ -41,7 +44,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
       className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
     >
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-slate-600">Amount</span>
+        <span className="font-medium text-slate-500">Amount</span>
         <input
           type="number"
           inputMode="decimal"
@@ -51,50 +54,50 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+          className={FIELD}
         />
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-slate-600">Category</span>
+        <span className="font-medium text-slate-500">Category</span>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+          className={FIELD}
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {CATEGORY_ICONS[c] || "📦"} {c}
             </option>
           ))}
         </select>
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-slate-600">Target month</span>
+        <span className="font-medium text-slate-500">Target month</span>
         <input
           type="month"
           required
           value={targetMonth}
           onChange={(e) => setTargetMonth(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+          className={FIELD}
         />
       </label>
 
       <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-1">
-        <span className="font-medium text-slate-600">Note (optional)</span>
+        <span className="font-medium text-slate-500">Note (optional)</span>
         <input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Lunch with team"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+          className={FIELD}
         />
       </label>
 
       <button
         type="submit"
-        className="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-300 sm:col-span-2 lg:col-span-1"
+        className="rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-300 active:scale-[0.99] sm:col-span-2 lg:col-span-1"
       >
         Add expense
       </button>

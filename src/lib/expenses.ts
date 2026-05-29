@@ -41,6 +41,23 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Other: "#64748b",
 };
 
+export const CATEGORY_ICONS: Record<string, string> = {
+  Food: "🍔",
+  Transport: "🚗",
+  Housing: "🏠",
+  Utilities: "💡",
+  Entertainment: "🎬",
+  Health: "🩺",
+  Shopping: "🛍️",
+  Education: "🎓",
+  "Pocket Money": "👛",
+  Investment: "📈",
+  "Stock Market": "📊",
+  "Credit Card Bill": "💳",
+  Savings: "🏦",
+  Other: "📦",
+};
+
 const STORAGE_KEY = "expense-tracker:expenses";
 
 export function loadExpenses(): Expense[] {
