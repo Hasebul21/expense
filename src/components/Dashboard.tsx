@@ -131,15 +131,16 @@ export default function Dashboard() {
     [expenses],
   );
 
+  // Category breakdown across ALL expenses (every month), not just the selected one.
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
-    for (const e of monthExpenses) {
+    for (const e of expenses) {
       totals[e.category] = (totals[e.category] || 0) + e.amount;
     }
     return Object.entries(totals)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  }, [monthExpenses]);
+  }, [expenses]);
 
   // Group every expense by its target month/year, newest month first.
   const groupedByMonth = useMemo(() => {

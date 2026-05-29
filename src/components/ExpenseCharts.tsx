@@ -23,7 +23,7 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
       <h2 className="mb-4 text-base font-semibold text-slate-700">
-        By category (selected month)
+        By category (all expenses)
       </h2>
       {hasCategory ? (
         <ResponsiveContainer width="100%" height={300}>
@@ -54,7 +54,7 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
           </PieChart>
         </ResponsiveContainer>
       ) : (
-        <EmptyChart label="No expenses this month yet." />
+        <EmptyChart label="No expenses recorded yet." />
       )}
       {hasCategory && (
         <ul className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
