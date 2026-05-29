@@ -8,26 +8,17 @@ type Props = {
   onAdd: (expense: Expense) => void;
 };
 
-function todayInMonth(month: string): string {
-  const now = new Date();
-  const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  if (month === nowKey) {
-    return `${nowKey}-${String(now.getDate()).padStart(2, "0")}`;
-  }
-  return `${month}-01`;
-}
-
 export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [targetMonth, setTargetMonth] = useState(defaultMonth);
-  const [date, setDate] = useState(() => todayInMonth(defaultMonth));
   const [note, setNote] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const value = parseFloat(amount);
     if (!isFinite(value) || value <= 0) return;
+    const now = new Date();
     onAdd({
       id:
         typeof crypto !== "undefined" && crypto.randomUUID
@@ -36,7 +27,8 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
       amount: value,
       category,
       targetMonth,
-      date,
+      // No date field anymore — stamp with "now" purely for stable ordering.
+      date: now.toISOString().slice(0, 10),
       note: note.trim() || undefined,
     });
     setAmount("");
@@ -46,7 +38,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:items-end"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
     >
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-slate-600">Amount</span>
@@ -59,7 +51,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
         />
       </label>
 
@@ -68,7 +60,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -85,18 +77,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
           required
           value={targetMonth}
           onChange={(e) => setTargetMonth(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-slate-600">Date</span>
-        <input
-          type="date"
-          required
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
         />
       </label>
 
@@ -107,7 +88,7 @@ export default function AddExpenseForm({ defaultMonth, onAdd }: Props) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Lunch with team"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
         />
       </label>
 

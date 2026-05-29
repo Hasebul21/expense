@@ -94,7 +94,7 @@ export default function Dashboard() {
   }, [expenses]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {/* Header */}
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -105,12 +105,12 @@ export default function Dashboard() {
             Track your monthly spending and visualize where your money goes.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex w-full items-center gap-2 text-sm text-slate-600 sm:w-auto">
           <span className="font-medium">Month</span>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 outline-none focus:border-indigo-500"
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 sm:flex-none sm:py-1.5 sm:text-sm"
           >
             {availableMonths.map((m) => (
               <option key={m} value={m}>
@@ -122,16 +122,11 @@ export default function Dashboard() {
       </header>
 
       {/* Summary cards */}
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <SummaryCard
           label={`${formatMonthLabel(selectedMonth)} total`}
           value={formatMoney(monthTotal)}
           accent="text-indigo-600"
-        />
-        <SummaryCard
-          label="Transactions this month"
-          value={String(monthExpenses.length)}
-          accent="text-cyan-600"
         />
         <SummaryCard
           label="All-time total"
@@ -141,7 +136,7 @@ export default function Dashboard() {
       </section>
 
       {/* Add form */}
-      <section className="mb-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+      <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
         <h2 className="mb-4 text-base font-semibold text-slate-700">
           Add a new expense
         </h2>
@@ -171,7 +166,7 @@ export default function Dashboard() {
             {groupedByMonth.map((group) => (
               <div
                 key={group.month}
-                className="flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
+                className="flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5"
               >
                 <div className="mb-3 flex items-baseline justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-lg font-semibold text-slate-800">
@@ -206,14 +201,6 @@ export default function Dashboard() {
                             </span>
                           ) : null}
                         </p>
-                        <p className="text-xs text-slate-400">
-                          {new Date(e.date).toLocaleDateString(undefined, {
-                            weekday: "short",
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
                       </div>
                       <span className="font-semibold text-slate-800">
                         {formatMoney(e.amount)}
@@ -221,7 +208,7 @@ export default function Dashboard() {
                       <button
                         onClick={() => deleteExpense(e.id)}
                         aria-label="Delete expense"
-                        className="rounded-md px-2 py-1 text-sm text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
                       >
                         ✕
                       </button>
@@ -252,7 +239,7 @@ function SummaryCard({
   accent: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
       <p className="text-sm text-slate-500">{label}</p>
       <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
     </div>

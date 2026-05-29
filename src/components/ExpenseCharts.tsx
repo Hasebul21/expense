@@ -21,7 +21,7 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
   const hasCategory = categoryTotals.length > 0;
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
       <h2 className="mb-4 text-base font-semibold text-slate-700">
         By category (selected month)
       </h2>
