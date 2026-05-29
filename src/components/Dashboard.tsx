@@ -23,6 +23,8 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
+  const [budgetMonth, setBudgetMonth] = useState(currentMonthKey());
+  const [budgetAmount, setBudgetAmount] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   // Load from localStorage on mount
@@ -41,6 +43,13 @@ export default function Dashboard() {
     if (hydrated) saveBudgets(budgets);
   }, [budgets, hydrated]);
 
+  // Prefill the budget amount input with whatever is already set for the chosen month
+  useEffect(() => {
+    setBudgetAmount(
+      budgets[budgetMonth] !== undefined ? String(budgets[budgetMonth]) : "",
+    );
+  }, [budgetMonth, budgets]);
+
   function setMonthBudget(month: string, raw: string) {
     const value = parseFloat(raw);
     setBudgets((prev) => {
@@ -52,6 +61,13 @@ export default function Dashboard() {
       }
       return next;
     });
+  }
+
+  function handleSetBudget(e: React.FormEvent) {
+    e.preventDefault();
+    if (!budgetMonth) return;
+    setMonthBudget(budgetMonth, budgetAmount);
+    setSelectedMonth(budgetMonth); // jump the view to the month we just budgeted
   }
 
   function addExpense(expense: Expense) {
@@ -165,25 +181,54 @@ export default function Dashboard() {
         </label>
       </header>
 
-      {/* Budget summary cards */}
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
-          <label className="block">
-            <span className="text-sm text-slate-500">
-              {formatMonthLabel(selectedMonth)} budget
-            </span>
+      {/* Set monthly budget */}
+      <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+        <h2 className="mb-4 text-base font-semibold text-slate-700">
+          Set monthly budget
+        </h2>
+        <form
+          onSubmit={handleSetBudget}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end"
+        >
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-slate-600">Budget month</span>
+            <input
+              type="month"
+              required
+              value={budgetMonth}
+              onChange={(e) => setBudgetMonth(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-slate-600">Budget amount</span>
             <input
               type="number"
               inputMode="decimal"
               min="0"
               step="0.01"
-              placeholder="Set budget"
-              value={monthBudget ?? ""}
-              onChange={(e) => setMonthBudget(selectedMonth, e.target.value)}
-              className="mt-1 w-full border-0 border-b border-transparent bg-transparent p-0 text-2xl font-bold text-slate-800 outline-none focus:border-indigo-400"
+              placeholder="e.g. 1500 (leave empty to clear)"
+              value={budgetAmount}
+              onChange={(e) => setBudgetAmount(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
             />
           </label>
-        </div>
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-300"
+          >
+            Set budget
+          </button>
+        </form>
+      </section>
+
+      {/* Budget summary cards */}
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <SummaryCard
+          label={`${formatMonthLabel(selectedMonth)} budget`}
+          value={hasBudget ? formatMoney(monthBudget) : "Not set"}
+          accent="text-slate-700"
+        />
 
         <SummaryCard
           label="Spent this month"
@@ -241,11 +286,6 @@ export default function Dashboard() {
           defaultMonth={selectedMonth}
           onAdd={addExpense}
         />
-      </section>
-
-      {/* Category chart */}
-      <section className="mb-6">
-        <ExpenseCharts categoryTotals={categoryTotals} />
       </section>
 
       {/* Transactions grouped into month/year cards */}
@@ -343,6 +383,11 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Category chart */}
+      <section className="mt-6">
+        <ExpenseCharts categoryTotals={categoryTotals} />
       </section>
 
       <footer className="mt-8 text-center text-xs text-slate-400">
