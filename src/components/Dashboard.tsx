@@ -299,28 +299,28 @@ export default function Dashboard() {
             No expenses recorded yet. Add your first one above.
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {groupedByMonth.map((group) => (
               <div
                 key={group.month}
-                className="flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5"
+                className="flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100"
               >
-                <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-800">
+                <div className="mb-2 flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-base font-semibold text-slate-800">
                       {formatMonthLabel(group.month)}
                     </h3>
                     <button
                       onClick={() => deleteMonth(group.month)}
                       aria-label={`Delete ${formatMonthLabel(group.month)}`}
                       title="Delete this month"
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
                     >
                       🗑
                     </button>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-indigo-600">
+                    <p className="text-base font-bold text-indigo-600">
                       {formatMoney(group.total)}
                     </p>
                     {budgets[group.month] !== undefined ? (
@@ -349,31 +349,31 @@ export default function Dashboard() {
                 </div>
                 <ul className="divide-y divide-slate-100">
                   {group.items.map((e) => (
-                    <li key={e.id} className="flex items-center gap-3 py-3">
+                    <li key={e.id} className="flex items-center gap-2 py-1.5">
                       <span
-                        className="inline-block h-9 w-1.5 rounded-full"
+                        className="inline-block h-5 w-1 shrink-0 rounded-full"
                         style={{
                           background: CATEGORY_COLORS[e.category] || "#64748b",
                         }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-slate-800">
+                        <p className="truncate text-sm text-slate-800">
                           {e.category}
                           {e.note ? (
-                            <span className="font-normal text-slate-500">
+                            <span className="text-slate-500">
                               {" "}
                               · {e.note}
                             </span>
                           ) : null}
                         </p>
                       </div>
-                      <span className="font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-slate-800">
                         {formatMoney(e.amount)}
                       </span>
                       <button
                         onClick={() => deleteExpense(e.id)}
                         aria-label="Delete expense"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs text-slate-400 transition hover:bg-red-50 hover:text-red-600 active:bg-red-100"
                       >
                         ✕
                       </button>
