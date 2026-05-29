@@ -19,12 +19,21 @@ function currentMonthKey(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+type TabId = "overview" | "monthly" | "category";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "monthly", label: "Expenses by Month" },
+  { id: "category", label: "By Category" },
+];
+
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Record<string, number>>({});
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [budgetMonth, setBudgetMonth] = useState(currentMonthKey());
   const [budgetAmount, setBudgetAmount] = useState("");
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [hydrated, setHydrated] = useState(false);
 
   // Load from localStorage on mount
@@ -150,10 +159,6 @@ export default function Dashboard() {
   const monthBudget = budgets[selectedMonth];
   const hasBudget = monthBudget !== undefined;
   const remaining = hasBudget ? monthBudget - monthTotal : null;
-  const spentPct =
-    hasBudget && monthBudget > 0
-      ? Math.min(100, (monthTotal / monthBudget) * 100)
-      : 0;
   const overBudget = remaining !== null && remaining < 0;
 
   return (
@@ -181,6 +186,25 @@ export default function Dashboard() {
         </label>
       </header>
 
+      {/* Section navigation */}
+      <nav className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-100">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === tab.id
+                ? "bg-indigo-600 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "overview" && (
+        <>
       {/* Set monthly budget */}
       <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
         <h2 className="mb-4 text-base font-semibold text-slate-700">
@@ -249,33 +273,6 @@ export default function Dashboard() {
         />
       </section>
 
-      {/* Budget progress bar */}
-      {hasBudget && (
-        <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-600">
-              {formatMonthLabel(selectedMonth)} budget usage
-            </span>
-            <span
-              className={overBudget ? "font-semibold text-red-600" : "text-slate-500"}
-            >
-              {formatMoney(monthTotal)} / {formatMoney(monthBudget)}
-              {overBudget
-                ? ` · over by ${formatMoney(Math.abs(remaining as number))}`
-                : ""}
-            </span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              className={`h-full rounded-full transition-all ${
-                overBudget ? "bg-red-500" : "bg-indigo-500"
-              }`}
-              style={{ width: `${overBudget ? 100 : spentPct}%` }}
-            />
-          </div>
-        </section>
-      )}
-
       {/* Add form */}
       <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
         <h2 className="mb-4 text-base font-semibold text-slate-700">
@@ -287,8 +284,11 @@ export default function Dashboard() {
           onAdd={addExpense}
         />
       </section>
+        </>
+      )}
 
-      {/* Transactions grouped into month/year cards */}
+      {activeTab === "monthly" && (
+      /* Transactions grouped into month/year cards */
       <section>
         <h2 className="mb-4 text-base font-semibold text-slate-700">
           Expenses by month
@@ -384,11 +384,14 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+      )}
 
-      {/* Category chart */}
-      <section className="mt-6">
+      {activeTab === "category" && (
+      /* Category chart */
+      <section>
         <ExpenseCharts categoryTotals={categoryTotals} />
       </section>
+      )}
 
       <footer className="mt-8 text-center text-xs text-slate-400">
         Your data is stored privately in this browser (localStorage). It never
