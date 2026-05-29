@@ -16,6 +16,10 @@ export const CATEGORIES = [
   "Health",
   "Shopping",
   "Education",
+  "Investment",
+  "Stock Market",
+  "Credit Card Bill",
+  "Savings",
   "Other",
 ] as const;
 
@@ -28,6 +32,10 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Health: "#ef4444",
   Shopping: "#8b5cf6",
   Education: "#14b8a6",
+  Investment: "#0ea5e9",
+  "Stock Market": "#a855f7",
+  "Credit Card Bill": "#f43f5e",
+  Savings: "#22c55e",
   Other: "#64748b",
 };
 
