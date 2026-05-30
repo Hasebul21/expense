@@ -58,13 +58,11 @@ export const CATEGORY_ICONS: Record<string, string> = {
   Other: "📦",
 };
 
-const STORAGE_KEY = "expense-tracker:expenses";
+export const STORAGE_KEY = "expense-tracker:expenses";
 
-export function loadExpenses(): Expense[] {
-  if (typeof window === "undefined") return [];
+// Pure parse of the stored JSON — shared by loadExpenses and the storage hook.
+export function parseExpenses(raw: string): Expense[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -84,19 +82,22 @@ export function loadExpenses(): Expense[] {
   }
 }
 
+export function loadExpenses(): Expense[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  return raw ? parseExpenses(raw) : [];
+}
+
 export function saveExpenses(expenses: Expense[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
 }
 
-const BUDGET_KEY = "expense-tracker:budgets";
-
 // Budgets are stored per target month: { "2026-05": 1500, ... }
-export function loadBudgets(): Record<string, number> {
-  if (typeof window === "undefined") return {};
+export const BUDGET_KEY = "expense-tracker:budgets";
+
+export function parseBudgets(raw: string): Record<string, number> {
   try {
-    const raw = window.localStorage.getItem(BUDGET_KEY);
-    if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return {};
     const result: Record<string, number> = {};
@@ -107,6 +108,12 @@ export function loadBudgets(): Record<string, number> {
   } catch {
     return {};
   }
+}
+
+export function loadBudgets(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  const raw = window.localStorage.getItem(BUDGET_KEY);
+  return raw ? parseBudgets(raw) : {};
 }
 
 export function saveBudgets(budgets: Record<string, number>): void {

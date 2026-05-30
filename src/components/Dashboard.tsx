@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   addMonths,
+  BUDGET_KEY,
   CATEGORY_COLORS,
   CATEGORY_ICONS,
   formatMonthLabel,
   formatMoney,
-  loadBudgets,
-  loadExpenses,
   monthRange,
-  saveBudgets,
-  saveExpenses,
+  parseBudgets,
+  parseExpenses,
+  STORAGE_KEY,
   type Expense,
 } from "../lib/expenses";
+import { useLocalStorageState } from "../lib/useLocalStorageState";
 import AddExpenseForm from "./AddExpenseForm";
 import ExpenseCharts from "./ExpenseCharts";
 
@@ -33,45 +34,64 @@ const TABS: { id: TabId; label: string; short: string; icon: string }[] = [
 const INPUT_CLASS =
   "w-full rounded-xl border border-transparent bg-slate-100 px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:bg-[#332720] dark:text-[#f1e7da] dark:focus:border-[#9c6b43] dark:focus:bg-[#3a2d24] dark:focus:ring-[#9c6b43]/20 sm:text-sm";
 
+// Stable references for the storage hook (parse/serialize/fallback must not
+// change identity between renders).
+const THEME_KEY = "expense-tracker:theme";
+const EMPTY_EXPENSES: Expense[] = [];
+const EMPTY_BUDGETS: Record<string, number> = {};
+const parseTheme = (raw: string): "light" | "dark" =>
+  raw === "dark" ? "dark" : "light";
+const identity = (value: string) => value;
+const serializeJSON = (value: unknown): string => JSON.stringify(value);
+
 export default function Dashboard() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  // localStorage-backed state — read/persisted through the store (no mount
+  // effect, no hydration mismatch).
+  const [expenses, setExpenses] = useLocalStorageState<Expense[]>(
+    STORAGE_KEY,
+    EMPTY_EXPENSES,
+    parseExpenses,
+    serializeJSON,
+  );
+  const [budgets, setBudgets] = useLocalStorageState<Record<string, number>>(
+    BUDGET_KEY,
+    EMPTY_BUDGETS,
+    parseBudgets,
+    serializeJSON,
+  );
+  const [theme, setTheme] = useLocalStorageState<"light" | "dark">(
+    THEME_KEY,
+    "light",
+    parseTheme,
+    identity,
+  );
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [budgetMonth, setBudgetMonth] = useState(currentMonthKey());
   const [budgetAmount, setBudgetAmount] = useState("");
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    setExpenses(loadExpenses());
-    setBudgets(loadBudgets());
-    const savedTheme = window.localStorage.getItem("expense-tracker:theme");
-    setTheme(savedTheme === "dark" ? "dark" : "light");
-    setHydrated(true);
-  }, []);
+  // Mirror the stored budget for the chosen month into the editable input.
+  // Done during render (not an effect) so the field is correct without an
+  // extra commit; we re-sync only when the month or its stored value changes.
+  const storedBudget = budgets[budgetMonth];
+  const [budgetSync, setBudgetSync] = useState({
+    month: budgetMonth,
+    stored: storedBudget,
+  });
+  if (budgetSync.month !== budgetMonth || budgetSync.stored !== storedBudget) {
+    setBudgetSync({ month: budgetMonth, stored: storedBudget });
+    setBudgetAmount(storedBudget !== undefined ? String(storedBudget) : "");
+  }
 
-  // Apply the coffee dark theme to the document + persist the choice
-  useEffect(() => {
-    if (!hydrated) return;
-    const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem("expense-tracker:theme", theme);
-  }, [theme, hydrated]);
-
-  useEffect(() => {
-    if (hydrated) saveExpenses(expenses);
-  }, [expenses, hydrated]);
-
-  useEffect(() => {
-    if (hydrated) saveBudgets(budgets);
-  }, [budgets, hydrated]);
-
-  useEffect(() => {
-    setBudgetAmount(
-      budgets[budgetMonth] !== undefined ? String(budgets[budgetMonth]) : "",
-    );
-  }, [budgetMonth, budgets]);
+  // Theme persists via the hook; toggle the document class imperatively so
+  // there's no flash and no reactive effect mirroring state into the DOM.
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", next === "dark");
+    }
+  }
 
   function setMonthBudget(month: string, raw: string) {
     const value = parseFloat(raw);
@@ -190,7 +210,7 @@ export default function Dashboard() {
         </h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            onClick={toggleTheme}
             aria-label="Toggle coffee dark mode"
             title={theme === "dark" ? "Switch to light" : "Switch to coffee dark"}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base shadow-sm dark:bg-[#271d16]"
