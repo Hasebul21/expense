@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   addMonths,
   BUDGET_KEY,
@@ -8,13 +8,21 @@ import {
   CATEGORY_ICONS,
   formatMonthLabel,
   formatMoney,
+  loadBudgets,
+  loadExpenses,
   monthRange,
-  parseBudgets,
-  parseExpenses,
   STORAGE_KEY,
   type Expense,
 } from "../lib/expenses";
 import { useLocalStorageState } from "../lib/useLocalStorageState";
+import { signOut } from "@/lib/auth-actions";
+import {
+  addExpense as addExpenseAction,
+  deleteExpense as deleteExpenseAction,
+  deleteMonth as deleteMonthAction,
+  migrateLocalData,
+  setMonthBudget as setMonthBudgetAction,
+} from "@/lib/expense-actions";
 import AddExpenseForm from "./AddExpenseForm";
 import ExpenseCharts from "./ExpenseCharts";
 
@@ -34,31 +42,32 @@ const TABS: { id: TabId; label: string; short: string; icon: string }[] = [
 const INPUT_CLASS =
   "w-full rounded-xl border border-transparent bg-slate-100 px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:bg-[#332720] dark:text-[#f1e7da] dark:focus:border-[#9c6b43] dark:focus:bg-[#3a2d24] dark:focus:ring-[#9c6b43]/20 sm:text-sm";
 
-// Stable references for the storage hook (parse/serialize/fallback must not
-// change identity between renders).
+// Stable references for the theme storage hook (parse/fallback must not change
+// identity between renders).
 const THEME_KEY = "expense-tracker:theme";
-const EMPTY_EXPENSES: Expense[] = [];
-const EMPTY_BUDGETS: Record<string, number> = {};
+const MIGRATED_KEY = "expense-tracker:migrated";
 const parseTheme = (raw: string): "light" | "dark" =>
   raw === "dark" ? "dark" : "light";
 const identity = (value: string) => value;
-const serializeJSON = (value: unknown): string => JSON.stringify(value);
 
-export default function Dashboard() {
-  // localStorage-backed state — read/persisted through the store (no mount
-  // effect, no hydration mismatch).
-  const [expenses, setExpenses] = useLocalStorageState<Expense[]>(
-    STORAGE_KEY,
-    EMPTY_EXPENSES,
-    parseExpenses,
-    serializeJSON,
-  );
-  const [budgets, setBudgets] = useLocalStorageState<Record<string, number>>(
-    BUDGET_KEY,
-    EMPTY_BUDGETS,
-    parseBudgets,
-    serializeJSON,
-  );
+type DashboardProps = {
+  initialExpenses: Expense[];
+  initialBudgets: Record<string, number>;
+  userEmail: string;
+};
+
+export default function Dashboard({
+  initialExpenses,
+  initialBudgets,
+  userEmail,
+}: DashboardProps) {
+  // Expenses/budgets live on the server (per-user, RLS-protected). We seed
+  // client state from the server snapshot and keep it in sync optimistically:
+  // each mutation updates local state immediately and fires a Server Action to
+  // persist. Theme stays a device-local preference in localStorage.
+  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+  const [budgets, setBudgets] =
+    useState<Record<string, number>>(initialBudgets);
   const [theme, setTheme] = useLocalStorageState<"light" | "dark">(
     THEME_KEY,
     "light",
@@ -93,17 +102,44 @@ export default function Dashboard() {
     }
   }
 
+  // One-time migration: if this device still has the old localStorage data,
+  // push it into the user's account on first authenticated load, then clear it
+  // and reload so the UI reflects the canonical server snapshot. Guarded by a
+  // flag so it never runs twice on this device.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(MIGRATED_KEY)) return;
+      const localExpenses = loadExpenses();
+      const localBudgets = loadBudgets();
+      if (localExpenses.length === 0 && Object.keys(localBudgets).length === 0) {
+        localStorage.setItem(MIGRATED_KEY, "1");
+        return;
+      }
+      void (async () => {
+        await migrateLocalData(localExpenses, localBudgets);
+        localStorage.setItem(MIGRATED_KEY, "1");
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(BUDGET_KEY);
+        window.location.reload();
+      })();
+    } catch {
+      // localStorage unavailable (private mode) — nothing to migrate.
+    }
+  }, []);
+
   function setMonthBudget(month: string, raw: string) {
     const value = parseFloat(raw);
+    const clear = raw === "" || !isFinite(value) || value < 0;
     setBudgets((prev) => {
       const next = { ...prev };
-      if (raw === "" || !isFinite(value) || value < 0) {
+      if (clear) {
         delete next[month];
       } else {
         next[month] = value;
       }
       return next;
     });
+    void setMonthBudgetAction(month, clear ? null : value);
   }
 
   function handleSetBudget(e: React.FormEvent) {
@@ -120,10 +156,12 @@ export default function Dashboard() {
   function addExpense(expense: Expense) {
     setExpenses((prev) => [expense, ...prev]);
     setSelectedMonth(expense.targetMonth);
+    void addExpenseAction(expense);
   }
 
   function deleteExpense(id: string) {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    void deleteExpenseAction(id);
   }
 
   function deleteMonth(month: string) {
@@ -141,6 +179,7 @@ export default function Dashboard() {
       delete next[month];
       return next;
     });
+    void deleteMonthAction(month);
   }
 
   // Always offer the last 3 and next 3 months around the current month, plus
@@ -209,6 +248,16 @@ export default function Dashboard() {
           Expenses
         </h1>
         <div className="flex items-center gap-2">
+          <form action={signOut}>
+            <button
+              type="submit"
+              aria-label="Sign out"
+              title={`Sign out (${userEmail})`}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base shadow-sm dark:bg-[#271d16]"
+            >
+              🚪
+            </button>
+          </form>
           <button
             onClick={toggleTheme}
             aria-label="Toggle coffee dark mode"
