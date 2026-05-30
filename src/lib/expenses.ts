@@ -118,6 +118,24 @@ export function monthKey(isoDate: string): string {
   return isoDate.slice(0, 7); // yyyy-mm
 }
 
+// Step a yyyy-mm key by a number of months (delta may be negative).
+export function addMonths(key: string, delta: number): string {
+  const [year, month] = key.split("-").map(Number);
+  const d = new Date(year, (month || 1) - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Inclusive range of yyyy-mm keys spanning `before` months back to `after` ahead.
+export function monthRange(
+  center: string,
+  before: number,
+  after: number,
+): string[] {
+  const out: string[] = [];
+  for (let i = -before; i <= after; i++) out.push(addMonths(center, i));
+  return out;
+}
+
 export function formatMonthLabel(key: string): string {
   const [year, month] = key.split("-").map(Number);
   const d = new Date(year, (month || 1) - 1, 1);

@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  addMonths,
   CATEGORY_COLORS,
   CATEGORY_ICONS,
   formatMonthLabel,
   formatMoney,
   loadBudgets,
   loadExpenses,
+  monthRange,
   saveBudgets,
   saveExpenses,
   type Expense,
@@ -91,6 +93,10 @@ export default function Dashboard() {
     setSelectedMonth(budgetMonth);
   }
 
+  function shiftMonth(delta: number) {
+    setSelectedMonth((m) => addMonths(m, delta));
+  }
+
   function addExpense(expense: Expense) {
     setExpenses((prev) => [expense, ...prev]);
     setSelectedMonth(expense.targetMonth);
@@ -117,9 +123,11 @@ export default function Dashboard() {
     });
   }
 
+  // Always offer the last 3 and next 3 months around the current month, plus
+  // any month that already has expenses and whatever is currently selected.
   const availableMonths = useMemo(() => {
     const set = new Set(expenses.map((e) => e.targetMonth));
-    set.add(currentMonthKey());
+    for (const m of monthRange(currentMonthKey(), 3, 3)) set.add(m);
     set.add(selectedMonth);
     return Array.from(set).sort().reverse();
   }, [expenses, selectedMonth]);
@@ -174,7 +182,7 @@ export default function Dashboard() {
     hasBudget && monthBudget > 0 ? (monthTotal / monthBudget) * 100 : 0;
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 pt-6 sm:max-w-3xl sm:px-6 sm:pb-10 lg:max-w-5xl">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-[calc(6.5rem_+_env(safe-area-inset-bottom))] pt-6 sm:max-w-3xl sm:px-6 sm:pb-10 lg:max-w-5xl">
       {/* Header */}
       <header className="mb-5 flex items-center justify-between gap-3">
         <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-[#f1e7da] dark:text-[#f1e7da] sm:text-3xl">
@@ -189,18 +197,36 @@ export default function Dashboard() {
           >
             {theme === "dark" ? "☀️" : "☕"}
           </button>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            aria-label="Select month"
-            className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-indigo-600 shadow-sm outline-none dark:bg-[#271d16] dark:text-[#d6a77a]"
-          >
-            {availableMonths.map((m) => (
-              <option key={m} value={m}>
-                {formatMonthLabel(m)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center rounded-full bg-white shadow-sm dark:bg-[#271d16]">
+            <button
+              onClick={() => shiftMonth(-1)}
+              aria-label="Previous month"
+              title="Previous month"
+              className="flex h-9 w-8 items-center justify-center rounded-l-full text-indigo-600 transition hover:bg-slate-100 active:scale-95 dark:text-[#d6a77a] dark:hover:bg-[#332720]"
+            >
+              ‹
+            </button>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              aria-label="Select month"
+              className="bg-transparent py-2 pl-1 pr-1 text-center text-sm font-semibold text-indigo-600 outline-none dark:text-[#d6a77a]"
+            >
+              {availableMonths.map((m) => (
+                <option key={m} value={m}>
+                  {formatMonthLabel(m)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => shiftMonth(1)}
+              aria-label="Next month"
+              title="Next month"
+              className="flex h-9 w-8 items-center justify-center rounded-r-full text-indigo-600 transition hover:bg-slate-100 active:scale-95 dark:text-[#d6a77a] dark:hover:bg-[#332720]"
+            >
+              ›
+            </button>
+          </div>
         </div>
       </header>
 

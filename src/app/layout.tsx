@@ -32,7 +32,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      {/* Safe-area insets keep content clear of the notch / status bar and
+          landscape side-cutouts when running edge-to-edge (viewportFit: cover).
+          The fixed bottom tab bar is viewport-anchored, so it stays
+          edge-to-edge and handles its own bottom inset. */}
+      <body className="flex min-h-full flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]">
+        {children}
+      </body>
     </html>
   );
 }
