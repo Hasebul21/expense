@@ -29,7 +29,7 @@ const TABS: { id: TabId; label: string; short: string; icon: string }[] = [
 ];
 
 const INPUT_CLASS =
-  "w-full rounded-xl border border-transparent bg-slate-100 px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 sm:text-sm";
+  "w-full rounded-xl border border-transparent bg-slate-100 px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:bg-[#332720] dark:text-[#f1e7da] dark:focus:border-[#9c6b43] dark:focus:bg-[#3a2d24] dark:focus:ring-[#9c6b43]/20 sm:text-sm";
 
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -38,13 +38,24 @@ export default function Dashboard() {
   const [budgetMonth, setBudgetMonth] = useState(currentMonthKey());
   const [budgetAmount, setBudgetAmount] = useState("");
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     setExpenses(loadExpenses());
     setBudgets(loadBudgets());
+    const savedTheme = window.localStorage.getItem("expense-tracker:theme");
+    setTheme(savedTheme === "dark" ? "dark" : "light");
     setHydrated(true);
   }, []);
+
+  // Apply the coffee dark theme to the document + persist the choice
+  useEffect(() => {
+    if (!hydrated) return;
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    window.localStorage.setItem("expense-tracker:theme", theme);
+  }, [theme, hydrated]);
 
   useEffect(() => {
     if (hydrated) saveExpenses(expenses);
@@ -166,33 +177,43 @@ export default function Dashboard() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-28 pt-6 sm:max-w-3xl sm:px-6 sm:pb-10 lg:max-w-5xl">
       {/* Header */}
       <header className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-[22px] font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-[#f1e7da] dark:text-[#f1e7da] sm:text-3xl">
           Expenses
         </h1>
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          aria-label="Select month"
-          className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-indigo-600 shadow-sm outline-none"
-        >
-          {availableMonths.map((m) => (
-            <option key={m} value={m}>
-              {formatMonthLabel(m)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            aria-label="Toggle coffee dark mode"
+            title={theme === "dark" ? "Switch to light" : "Switch to coffee dark"}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base shadow-sm dark:bg-[#271d16]"
+          >
+            {theme === "dark" ? "☀️" : "☕"}
+          </button>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            aria-label="Select month"
+            className="rounded-full bg-white px-3.5 py-2 text-sm font-semibold text-indigo-600 shadow-sm outline-none dark:bg-[#271d16] dark:text-[#d6a77a]"
+          >
+            {availableMonths.map((m) => (
+              <option key={m} value={m}>
+                {formatMonthLabel(m)}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
 
       {/* Top tabs — tablet/desktop (segmented control) */}
-      <nav className="mb-6 hidden gap-1 rounded-2xl bg-slate-200/70 p-1 sm:flex">
+      <nav className="mb-6 hidden gap-1 rounded-2xl bg-slate-200/70 p-1 dark:bg-[#241c16] sm:flex">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition ${
               activeTab === tab.id
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-white text-slate-900 dark:text-[#f1e7da] shadow-sm dark:bg-[#332720]"
+                : "text-slate-500 dark:text-[#c4ac95] hover:text-slate-700 dark:hover:text-[#f1e7da]"
             }`}
           >
             {tab.label}
@@ -201,14 +222,16 @@ export default function Dashboard() {
       </nav>
 
       {/* Bottom tab bar — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-[#3d2f25] dark:bg-[#1f1813]/90 sm:hidden">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             aria-current={activeTab === tab.id ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition ${
-              activeTab === tab.id ? "text-indigo-600" : "text-slate-400"
+              activeTab === tab.id
+                ? "text-indigo-600 dark:text-[#d6a77a]"
+                : "text-slate-400 dark:text-[#95806c]"
             }`}
           >
             <span className="text-xl leading-none">{tab.icon}</span>
@@ -221,7 +244,7 @@ export default function Dashboard() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Hero budget card */}
-          <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-violet-500 to-violet-600 p-6 text-white shadow-lg shadow-violet-500/25">
+          <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-violet-500 to-violet-600 p-6 text-white shadow-lg shadow-violet-500/25 dark:from-[#7b5536] dark:via-[#5e4029] dark:to-[#43301f] dark:shadow-black/40">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-white/70">
@@ -263,7 +286,7 @@ export default function Dashboard() {
           {/* Add expense */}
           <section>
             <SectionLabel>Add expense</SectionLabel>
-            <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+            <div className="rounded-2xl bg-white dark:bg-[#271d16] p-4 shadow-sm sm:p-5">
               <AddExpenseForm
                 key={selectedMonth}
                 defaultMonth={selectedMonth}
@@ -275,13 +298,13 @@ export default function Dashboard() {
           {/* Set monthly budget */}
           <section>
             <SectionLabel>Monthly budget</SectionLabel>
-            <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+            <div className="rounded-2xl bg-white dark:bg-[#271d16] p-4 shadow-sm sm:p-5">
               <form
                 onSubmit={handleSetBudget}
                 className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-end"
               >
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-slate-500">
+                  <span className="font-medium text-slate-500 dark:text-[#c4ac95]">
                     Budget month
                   </span>
                   <input
@@ -293,7 +316,7 @@ export default function Dashboard() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-slate-500">Amount</span>
+                  <span className="font-medium text-slate-500 dark:text-[#c4ac95]">Amount</span>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -307,7 +330,7 @@ export default function Dashboard() {
                 </label>
                 <button
                   type="submit"
-                  className="rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-300 active:scale-[0.99]"
+                  className="rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-300 active:scale-[0.99] dark:bg-[#9c6b43] dark:shadow-[#9c6b43]/20 dark:hover:bg-[#b07c4f]"
                 >
                   Set budget
                 </button>
@@ -333,7 +356,7 @@ export default function Dashboard() {
                   <section key={group.month}>
                     <div className="mb-2 flex items-end justify-between gap-2 px-1">
                       <div>
-                        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
                           {formatMonthLabel(group.month)}
                         </h2>
                         {left !== null && (
@@ -345,50 +368,50 @@ export default function Dashboard() {
                             {left < 0
                               ? `Over by ${formatMoney(-left)}`
                               : `${formatMoney(left)} left`}{" "}
-                            <span className="text-slate-400">
+                            <span className="text-slate-400 dark:text-[#95806c]">
                               of {formatMoney(budget as number)}
                             </span>
                           </p>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base font-bold text-slate-900">
+                        <span className="text-base font-bold text-slate-900 dark:text-[#f1e7da]">
                           {formatMoney(group.total)}
                         </span>
                         <button
                           onClick={() => deleteMonth(group.month)}
                           aria-label={`Delete ${formatMonthLabel(group.month)}`}
                           title="Delete this month"
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-400 dark:text-[#95806c] transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
                         >
                           🗑
                         </button>
                       </div>
                     </div>
-                    <ul className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <ul className="overflow-hidden rounded-2xl bg-white dark:bg-[#271d16] shadow-sm">
                       {group.items.map((e) => (
                         <li
                           key={e.id}
-                          className="flex items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-0"
+                          className="flex items-center gap-3 border-b border-slate-100 dark:border-[#3d2f25] px-3 py-2.5 last:border-0"
                         >
                           <CategoryIcon category={e.category} />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[15px] font-medium text-slate-900">
+                            <p className="truncate text-[15px] font-medium text-slate-900 dark:text-[#f1e7da]">
                               {e.category}
                             </p>
                             {e.note ? (
-                              <p className="truncate text-xs text-slate-400">
+                              <p className="truncate text-xs text-slate-400 dark:text-[#95806c]">
                                 {e.note}
                               </p>
                             ) : null}
                           </div>
-                          <span className="text-[15px] font-semibold text-slate-900">
+                          <span className="text-[15px] font-semibold text-slate-900 dark:text-[#f1e7da]">
                             {formatMoney(e.amount)}
                           </span>
                           <button
                             onClick={() => deleteExpense(e.id)}
                             aria-label="Delete expense"
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base text-slate-300 transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base text-slate-300 dark:text-[#6f5d4d] transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
                           >
                             ×
                           </button>
@@ -406,7 +429,7 @@ export default function Dashboard() {
       {/* ---------- BY CATEGORY ---------- */}
       {activeTab === "category" && <ExpenseCharts categoryTotals={categoryTotals} />}
 
-      <footer className="mt-10 text-center text-xs text-slate-400">
+      <footer className="mt-10 text-center text-xs text-slate-400 dark:text-[#95806c]">
         Stored privately on this device — your data never leaves your browser.
       </footer>
     </main>
@@ -475,10 +498,10 @@ function Stat({
       ? "text-rose-600"
       : tone === "green"
         ? "text-emerald-600"
-        : "text-slate-900";
+        : "text-slate-900 dark:text-[#f1e7da]";
   return (
-    <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-      <p className="truncate text-[11px] font-medium text-slate-400">{label}</p>
+    <div className="rounded-2xl bg-white dark:bg-[#271d16] p-3 text-center shadow-sm">
+      <p className="truncate text-[11px] font-medium text-slate-400 dark:text-[#95806c]">{label}</p>
       <p className={`mt-0.5 truncate text-base font-bold sm:text-lg ${color}`}>
         {value}
       </p>
@@ -488,7 +511,7 @@ function Stat({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
       {children}
     </h2>
   );
@@ -496,7 +519,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-2xl bg-white py-12 text-center text-sm text-slate-400 shadow-sm">
+    <p className="rounded-2xl bg-white dark:bg-[#271d16] py-12 text-center text-sm text-slate-400 dark:text-[#95806c] shadow-sm">
       {children}
     </p>
   );

@@ -1,9 +1,17 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* iOS systemGroupedBackground */
   --background: #f2f2f7;
   --foreground: #1c1c1e;
+}
+
+/* Coffee dark theme */
+.dark {
+  --background: #1a1310; /* espresso */
+  --foreground: #f1e7da; /* latte cream */
 }
 
 @theme inline {

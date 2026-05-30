@@ -18,7 +18,7 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
 
   if (!hasCategory) {
     return (
-      <p className="rounded-2xl bg-white py-12 text-center text-sm text-slate-400 shadow-sm">
+      <p className="rounded-2xl bg-white dark:bg-[#271d16] py-12 text-center text-sm text-slate-400 dark:text-[#95806c] shadow-sm">
         No expenses recorded yet.
       </p>
     );
@@ -26,11 +26,11 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-3xl bg-white p-5 shadow-sm">
-        <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <section className="rounded-3xl bg-white p-5 shadow-sm dark:bg-[#271d16]">
+        <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
           Total spent
         </p>
-        <p className="mt-1 text-center text-3xl font-bold text-slate-900">
+        <p className="mt-1 text-center text-3xl font-bold text-slate-900 dark:text-[#f1e7da]">
           {formatMoney(grandTotal)}
         </p>
         <div className="mt-2">
@@ -66,17 +66,17 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
           Breakdown
         </h2>
-        <ul className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        <ul className="overflow-hidden rounded-2xl bg-white dark:bg-[#271d16] shadow-sm">
           {categoryTotals.map((c) => {
             const pct = grandTotal > 0 ? (c.value / grandTotal) * 100 : 0;
             const color = CATEGORY_COLORS[c.name] || "#64748b";
             return (
               <li
                 key={c.name}
-                className="flex items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-0"
+                className="flex items-center gap-3 border-b border-slate-100 dark:border-[#3d2f25] px-3 py-2.5 last:border-0"
               >
                 <span
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base"
@@ -85,12 +85,12 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
                   {CATEGORY_ICONS[c.name] || "📦"}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-slate-900">
+                  <p className="truncate text-[15px] font-medium text-slate-900 dark:text-[#f1e7da]">
                     {c.name}
                   </p>
-                  <p className="text-xs text-slate-400">{pct.toFixed(0)}%</p>
+                  <p className="text-xs text-slate-400 dark:text-[#95806c]">{pct.toFixed(0)}%</p>
                 </div>
-                <span className="text-[15px] font-semibold text-slate-900">
+                <span className="text-[15px] font-semibold text-slate-900 dark:text-[#f1e7da]">
                   {formatMoney(c.value)}
                 </span>
               </li>
