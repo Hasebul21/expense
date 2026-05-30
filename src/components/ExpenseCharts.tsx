@@ -25,16 +25,19 @@ export default function ExpenseCharts({ categoryTotals }: Props) {
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-3xl bg-white p-5 shadow-sm dark:bg-[#271d16]">
+    <div className="min-w-0 space-y-5">
+      <section className="overflow-hidden rounded-3xl bg-white p-5 shadow-sm dark:bg-[#271d16]">
         <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
           Total spent
         </p>
         <p className="mt-1 text-center text-3xl font-bold text-slate-900 dark:text-[#f1e7da]">
           {formatMoney(grandTotal)}
         </p>
-        <div className="mt-2">
-          <ResponsiveContainer width="100%" height={240}>
+        {/* min-w-0 + overflow-hidden keep recharts' ResponsiveContainer from
+            measuring a width wider than the viewport, which otherwise lets the
+            page scroll sideways on mobile and clips the chart. */}
+        <div className="mt-2 min-w-0 overflow-hidden">
+          <ResponsiveContainer width="100%" height={240} minWidth={0}>
             <PieChart>
               <Pie
                 data={categoryTotals}
