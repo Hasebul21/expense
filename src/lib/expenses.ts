@@ -24,6 +24,14 @@ export const CATEGORIES = [
   "Other",
 ] as const;
 
+// Categories that represent money put away rather than spent — summed per
+// month into the card's "Invested" total.
+export const INVESTED_CATEGORIES = [
+  "Investment",
+  "Stock Market",
+  "Savings",
+] as const;
+
 export const CATEGORY_COLORS: Record<string, string> = {
   Food: "#6366f1",
   Transport: "#06b6d4",

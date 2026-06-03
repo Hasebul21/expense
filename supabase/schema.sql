@@ -47,3 +47,22 @@ create policy "Users manage their own budgets"
   to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- ── Month notes (one free-text note per user per month) ──────────────────────
+create table if not exists public.month_notes (
+  user_id uuid not null references auth.users (id) on delete cascade
+            default auth.uid(),
+  month   text not null,                -- yyyy-mm
+  note    text not null,
+  primary key (user_id, month)
+);
+
+alter table public.month_notes enable row level security;
+
+drop policy if exists "Users manage their own month notes" on public.month_notes;
+create policy "Users manage their own month notes"
+  on public.month_notes
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

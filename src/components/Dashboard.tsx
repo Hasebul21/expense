@@ -8,6 +8,7 @@ import {
   CATEGORY_ICONS,
   formatMonthLabel,
   formatMoney,
+  INVESTED_CATEGORIES,
   loadBudgets,
   loadExpenses,
   monthRange,
@@ -22,6 +23,7 @@ import {
   deleteMonth as deleteMonthAction,
   migrateLocalData,
   setMonthBudget as setMonthBudgetAction,
+  setMonthNote as setMonthNoteAction,
 } from "@/lib/expense-actions";
 import AddExpenseForm from "./AddExpenseForm";
 import ExpenseCharts from "./ExpenseCharts";
@@ -53,12 +55,14 @@ const identity = (value: string) => value;
 type DashboardProps = {
   initialExpenses: Expense[];
   initialBudgets: Record<string, number>;
+  initialNotes: Record<string, string>;
   userEmail: string;
 };
 
 export default function Dashboard({
   initialExpenses,
   initialBudgets,
+  initialNotes,
   userEmail,
 }: DashboardProps) {
   // Expenses/budgets live on the server (per-user, RLS-protected). We seed
@@ -68,6 +72,8 @@ export default function Dashboard({
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [budgets, setBudgets] =
     useState<Record<string, number>>(initialBudgets);
+  const [notes, setNotes] =
+    useState<Record<string, string>>(initialNotes);
   const [theme, setTheme] = useLocalStorageState<"light" | "dark">(
     THEME_KEY,
     "light",
@@ -142,6 +148,22 @@ export default function Dashboard({
     void setMonthBudgetAction(month, clear ? null : value);
   }
 
+  // Persist a month's note optimistically: update local state right away, drop
+  // the key when it's blank, and fire the Server Action to save.
+  function setMonthNote(month: string, raw: string) {
+    const value = raw.trim();
+    setNotes((prev) => {
+      const next = { ...prev };
+      if (value) {
+        next[month] = value;
+      } else {
+        delete next[month];
+      }
+      return next;
+    });
+    void setMonthNoteAction(month, value || null);
+  }
+
   function handleSetBudget(e: React.FormEvent) {
     e.preventDefault();
     if (!budgetMonth) return;
@@ -175,6 +197,11 @@ export default function Dashboard({
     }
     setExpenses((prev) => prev.filter((e) => e.targetMonth !== month));
     setBudgets((prev) => {
+      const next = { ...prev };
+      delete next[month];
+      return next;
+    });
+    setNotes((prev) => {
       const next = { ...prev };
       delete next[month];
       return next;
@@ -230,6 +257,15 @@ export default function Dashboard({
         month,
         items: items.slice().sort((a, b) => (a.date < b.date ? 1 : -1)),
         total: items.reduce((sum, e) => sum + e.amount, 0),
+        invested: items.reduce(
+          (sum, e) =>
+            INVESTED_CATEGORIES.includes(
+              e.category as (typeof INVESTED_CATEGORIES)[number],
+            )
+              ? sum + e.amount
+              : sum,
+          0,
+        ),
       }));
   }, [expenses]);
 
@@ -483,36 +519,64 @@ export default function Dashboard({
                         </button>
                       </div>
                     </div>
-                    <ul className="overflow-hidden rounded-2xl bg-white dark:bg-[#271d16] shadow-sm">
-                      {group.items.map((e) => (
-                        <li
-                          key={e.id}
-                          className="flex items-center gap-3 border-b border-slate-100 dark:border-[#3d2f25] px-3 py-2.5 last:border-0"
-                        >
-                          <CategoryIcon category={e.category} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[15px] font-medium text-slate-900 dark:text-[#f1e7da]">
-                              {e.category}
-                            </p>
-                            {e.note ? (
-                              <p className="truncate text-xs text-slate-400 dark:text-[#95806c]">
-                                {e.note}
-                              </p>
-                            ) : null}
-                          </div>
-                          <span className="text-[15px] font-semibold text-slate-900 dark:text-[#f1e7da]">
-                            {formatMoney(e.amount)}
-                          </span>
-                          <button
-                            onClick={() => deleteExpense(e.id)}
-                            aria-label="Delete expense"
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base text-slate-300 dark:text-[#6f5d4d] transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
+                    <div className="overflow-hidden rounded-2xl bg-white dark:bg-[#271d16] shadow-sm">
+                      <ul>
+                        {group.items.map((e) => (
+                          <li
+                            key={e.id}
+                            className="flex items-center gap-3 border-b border-slate-100 dark:border-[#3d2f25] px-3 py-2.5 last:border-0"
                           >
-                            ×
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                            <CategoryIcon category={e.category} />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[15px] font-medium text-slate-900 dark:text-[#f1e7da]">
+                                {e.category}
+                              </p>
+                              {e.note ? (
+                                <p className="truncate text-xs text-slate-400 dark:text-[#95806c]">
+                                  {e.note}
+                                </p>
+                              ) : null}
+                            </div>
+                            <span className="text-[15px] font-semibold text-slate-900 dark:text-[#f1e7da]">
+                              {formatMoney(e.amount)}
+                            </span>
+                            <button
+                              onClick={() => deleteExpense(e.id)}
+                              aria-label="Delete expense"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base text-slate-300 dark:text-[#6f5d4d] transition hover:bg-rose-50 hover:text-rose-600 active:bg-rose-100"
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Total invested this month */}
+                      <div className="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-[#3d2f25] px-3 py-2.5">
+                        <span className="flex items-center gap-1.5 text-[13px] font-medium text-slate-500 dark:text-[#c4ac95]">
+                          <span aria-hidden>📈</span> Total invested
+                        </span>
+                        <span className="text-[15px] font-semibold text-emerald-600">
+                          {formatMoney(group.invested)}
+                        </span>
+                      </div>
+
+                      {/* Per-month note */}
+                      <div className="border-t border-slate-100 dark:border-[#3d2f25] px-3 py-2.5">
+                        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-[#95806c]">
+                          Note
+                        </label>
+                        <textarea
+                          defaultValue={notes[group.month] ?? ""}
+                          onBlur={(ev) =>
+                            setMonthNote(group.month, ev.target.value)
+                          }
+                          rows={2}
+                          placeholder="Add a note for this month…"
+                          className="w-full resize-y rounded-lg border border-transparent bg-slate-100 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:bg-[#332720] dark:text-[#f1e7da] dark:focus:border-[#9c6b43] dark:focus:bg-[#3a2d24] dark:focus:ring-[#9c6b43]/20"
+                        />
+                      </div>
+                    </div>
                   </section>
                 );
               })}

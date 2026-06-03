@@ -30,17 +30,19 @@ function rowToExpense(row: ExpenseRow): Expense {
 export async function loadUserData(): Promise<{
   expenses: Expense[];
   budgets: Record<string, number>;
+  notes: Record<string, string>;
 }> {
   const user = await requireUser();
   const supabase = await createClient();
 
-  const [expensesRes, budgetsRes] = await Promise.all([
+  const [expensesRes, budgetsRes, notesRes] = await Promise.all([
     supabase
       .from("expenses")
       .select("id, amount, category, date, target_month, note")
       .eq("user_id", user.id)
       .order("date", { ascending: false }),
     supabase.from("budgets").select("month, amount").eq("user_id", user.id),
+    supabase.from("month_notes").select("month, note").eq("user_id", user.id),
   ]);
 
   const expenses = (expensesRes.data ?? []).map(rowToExpense);
@@ -50,5 +52,10 @@ export async function loadUserData(): Promise<{
     budgets[b.month] = Number(b.amount);
   }
 
-  return { expenses, budgets };
+  const notes: Record<string, string> = {};
+  for (const n of notesRes.data ?? []) {
+    notes[n.month] = n.note;
+  }
+
+  return { expenses, budgets, notes };
 }

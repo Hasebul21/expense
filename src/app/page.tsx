@@ -7,12 +7,13 @@ import { loadUserData } from "@/lib/expense-data";
 // client Dashboard as the initial snapshot.
 export default async function Home() {
   const user = await requireUser();
-  const { expenses, budgets } = await loadUserData();
+  const { expenses, budgets, notes } = await loadUserData();
 
   return (
     <Dashboard
       initialExpenses={expenses}
       initialBudgets={budgets}
+      initialNotes={notes}
       userEmail={user.email ?? ""}
     />
   );

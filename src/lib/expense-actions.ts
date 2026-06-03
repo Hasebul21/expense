@@ -44,7 +44,37 @@ export async function deleteMonth(month: string): Promise<void> {
       .eq("target_month", month)
       .eq("user_id", user.id),
     supabase.from("budgets").delete().eq("month", month).eq("user_id", user.id),
+    supabase
+      .from("month_notes")
+      .delete()
+      .eq("month", month)
+      .eq("user_id", user.id),
   ]);
+}
+
+export async function setMonthNote(
+  month: string,
+  note: string | null,
+): Promise<void> {
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  const trimmed = note?.trim();
+  if (!trimmed) {
+    await supabase
+      .from("month_notes")
+      .delete()
+      .eq("month", month)
+      .eq("user_id", user.id);
+    return;
+  }
+
+  await supabase
+    .from("month_notes")
+    .upsert(
+      { user_id: user.id, month, note: trimmed },
+      { onConflict: "user_id,month" },
+    );
 }
 
 export async function setMonthBudget(
